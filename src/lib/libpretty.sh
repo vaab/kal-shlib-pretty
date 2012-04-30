@@ -1,4 +1,3 @@
-#!/bin/bash
 ## Begin of libpretty.sh
 
 ## Provides general purpose pretty printing function for feedback
