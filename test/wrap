@@ -1,0 +1,159 @@
+#!/bin/bash
+
+src_file="$pkg_path"/lib/libpretty.sh
+
+##
+## You can launch these test by calling:
+##
+##     pkg_path="../src" TESTNAME
+##
+## ``pkg_path`` is the path to the source/prefix directory which
+## contains lib to test.
+##
+
+exname=$(basename $0)
+
+if test -z "$pkg_path"; then
+    echo "You can launch these test by calling:"
+    echo
+    echo '    pkg_path="../src" '$0
+    echo
+    echo -n "'pkg_path' is the path to the source/prefix directory which "
+    echo "contains lib to test."
+    exit 1
+fi
+
+prefix_cmd="
+. /etc/shlib
+
+source '$src_file'
+"
+
+export pkg_path src_file
+[ "$DEBUG" ] && echo "Loading testlib..."
+if ! . ./libtest ; then
+   echo 'libtest failed to load.'
+   exit 1
+fi
+
+export COLUMNS=50
+
+pkg_path_common=${pkg_path_common:-/usr/lib/shlib}
+if ! test -f "$pkg_path_common/libcolor.sh"; then
+    echo "These tests need to know where to find 'libcolor.sh'. You do not have it in '$pkg_path_common',"
+    echo "so please provide the correct location:"
+    echo
+    echo "    pkg_path_common='correct/location' pkg_path='$pkg_path'" "$0" "$@"
+    echo
+    exit 1
+fi
+
+. $pkg_path_common/libcolor.sh
+
+
+##
+## Elt
+##
+
+# Bare wrap ok
+try 'Wrap "true"'
+noerror
+is out "- true
+- true                                         W
+- true                                [  OK  ] W" NOCOLOR NOPOS TRIM
+
+# Bare wrap fails
+try 'Wrap "false"'
+is errlvl 1
+is out "- false
+- false                                        W
+- false                               [FAILED] W
+***** ERROR in wrapped command:
+***** code:
+false
+>>>>> Log info follows:
+<<<<< End Log.
+***** errorlevel was : 1" NOCOLOR NOPOS TRIM
+
+# Bare wrap with quiet mode
+try 'Wrap -q "true"'
+noerror
+is out "" TRIM
+
+# Bare wrap with quiet mode
+try 'Wrap -q "false"'
+is errlvl 1
+is out "***** ERROR in wrapped command:
+***** code:
+false
+>>>>> Log info follows:
+<<<<< End Log.
+***** errorlevel was : 1" NOCOLOR TRIM
+
+# Bare wrap with description mode
+try 'Wrap -d "My command"  "true"'
+noerror
+is out "- My command
+- My command                                   W
+- My command                          [  OK  ] W" NOPOS NOCOLOR TRIM
+
+# Bare wrap with description mode
+try 'Wrap -d "My command" "false"'
+is errlvl 1
+is out "- My command
+- My command                                   W
+- My command                          [FAILED] W
+***** ERROR in wrapped command:
+***** code:
+false
+>>>>> Log info follows:
+<<<<< End Log.
+***** errorlevel was : 1" NOCOLOR NOPOS TRIM
+
+# Description wrap with quiet mode
+try 'Wrap -q -d "My successful command" "true"'
+noerror
+is out "" TRIM
+
+# Description wrap with quiet mode
+try 'Wrap -q -d "My failing command" "false"'
+is out "***** ERROR in wrapped command:
+***** code:
+false
+>>>>> Log info follows:
+<<<<< End Log.
+***** errorlevel was : 1" NOCOLOR TRIM
+
+##
+## EOF Mode
+##
+
+# Description wrap with quiet mode
+try 'Wrap -q -d "My failing command" <<EOF
+
+false &&
+false &&
+false
+
+EOF'
+is out "***** ERROR in wrapped command:
+***** code:
+
+false &&
+false &&
+false
+>>>>> Log info follows:
+<<<<< End Log.
+***** errorlevel was : 1" NOCOLOR TRIM
+
+# Description wrap with quiet mode
+try 'Wrap -q -d "My successful command" <<EOF
+
+false ||
+false ||
+true
+
+EOF'
+is out "" NOCOLOR TRIM
+
+summary

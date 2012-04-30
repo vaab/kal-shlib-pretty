@@ -1,0 +1,253 @@
+#!/bin/bash
+
+src_file="$pkg_path"/lib/libpretty.sh
+
+##
+## You can launch these test by calling:
+##
+##     pkg_path="../src" TESTNAME
+##
+## ``pkg_path`` is the path to the source/prefix directory which
+## contains lib to test.
+##
+
+exname=$(basename $0)
+
+if test -z "$pkg_path"; then
+    echo "You can launch these test by calling:"
+    echo
+    echo '    pkg_path="../src" '$0
+    echo
+    echo -n "'pkg_path' is the path to the source/prefix directory which "
+    echo "contains lib to test."
+    exit 1
+fi
+
+prefix_cmd="
+. /etc/shlib
+
+source '$src_file'
+#source '$pkg_path/lib/libcolor.sh'
+"
+
+export pkg_path src_file
+[ "$DEBUG" ] && echo "Loading testlib..."
+if ! . ./libtest ; then
+   echo 'libtest failed to load.'
+   exit 1
+fi
+
+export COLUMNS=50
+
+pkg_path_common=${pkg_path_common:-/usr/lib/shlib}
+if ! test -f "$pkg_path_common/libcolor.sh"; then
+    echo "These tests need to know where to find 'libcolor.sh'. You do not have it in '$pkg_path_common',"
+    echo "so please provide the correct location:"
+    echo
+    echo "    pkg_path_common='correct/location' pkg_path='$pkg_path'" "$0" "$@"
+    echo
+    exit 1
+fi
+
+. $pkg_path_common/libcolor.sh
+
+
+##
+## Elt
+##
+
+# quick check
+export ansi_color=yes
+try 'Elt "abcdefg" ; Feed'
+noerror
+is out "- abcdefg" NOCOLOR NOPOS TRIM
+
+# without color
+export ansi_color=no
+try 'Elt "abcdefg" ; Feed'
+noerror
+is out "- abcdefg" NOPOS TRIM
+
+# without color
+try '
+ansi_color no
+Elt "abcdefghijklmnopqrstuvxyz"
+print_info "12345678901234567890"
+print_info_char X
+Feedback'
+noerror
+is out "$COLUMNS" SIZE
+is out " - abcdefghijkl.. 12345678901234567890 [  OK  ] X"
+
+try '
+ansi_color no
+Elt "abcdefghijklmn"
+print_info "12345678901234567890"
+print_info_char U
+Feedback'
+noerror
+is out " - abcdefghijklmn 12345678901234567890 [  OK  ] U"
+
+
+# with ansi_color, some data are rewritten for each event
+try 'ansi_color yes
+print_list_char " * " # no print
+Elt "abcdefghijklmnopqrstuvxyz"
+print_info "123456789012345678901"
+print_status success
+print_info_char Z
+Feedback'
+noerror
+is out "* abcdefghijkl..
+* abcdefghijkl.. 123456789012345678..
+* abcdefghijkl.. 123456789012345678.. [  OK  ]
+* abcdefghijkl.. 123456789012345678.. [  OK  ] Z
+* abcdefghijkl.. 123456789012345678.. [  OK  ] Z" NOPOS NOCOLOR TRIM
+
+##
+## TEST PRESERVATION OF ERRORLEVEL THROUGH ALL print_*, Feed*
+##
+
+mkerr() {
+    return $1
+}
+
+export -f mkerr
+
+try 'mkerr 65 ; Elt "aa"'                       ; is errlvl 65
+try 'mkerr 65 ; Elt "aa" ; Feed'                ; is errlvl 65
+try 'mkerr 65 ; Elt "aa" , Feedback'            ; is errlvl 65
+try 'mkerr 65 ; Elt "aa" ; print_info "bb"'     ; is errlvl 65
+try 'mkerr 65 ; Elt "aa" ; print_info_char "d"' ; is errlvl 65
+
+##
+## Cutline
+##
+
+## no COLOR in pattern
+
+# casts a usage msg
+try 'echo "abcdef" | cutline'
+is out ''
+is errlvl 1
+is err    reg "^usage: cutline.*"
+
+# do not cut on small msg
+try 'echo -n "abcdef" | cutline 7; echo "!"'
+noerror
+is out "abcdef !"
+
+# cut on larger msg
+try 'echo "abcdefg" | cutline 7'
+noerror
+is out "abcdefg" NOCOLOR
+
+# cut on larger msg
+try 'echo "abcdefgh" | cutline 7'
+noerror
+is out "abcde.." NOCOLOR
+
+# without color this is working
+try '
+ansi_color no
+echo "abcdefgh" | cutline 7'
+noerror
+is out "abcde.."
+
+## COLOR in pattern
+
+# without color this is working
+try '
+ansi_color yes
+echo "ab${BLUE}cdefg" | cutline 7'
+noerror
+is out "ab${BLUE}cdefg${NORMAL}"
+
+# without color this is working
+try '
+ansi_color yes
+DEBUG=1
+echo "ab${BLUE}cdefgh" | cutline 7'
+noerror
+is out "abcde.." NOCOLOR
+is out "ab${BLUE}cde${GRAY}..${NORMAL}"
+
+# without color this is working
+try '
+ansi_color yes
+DEBUG=1
+echo -n "${BLUE}a${NORMAL}" | cutline 7
+echo "!"'
+noerror
+is out "a      !" NOCOLOR
+is out "${BLUE}a${NORMAL}      ${NORMAL}!"
+
+##
+## Section
+##
+
+# quick check
+export ansi_color=yes
+try 'Section "abcdefg"
+Elt Hello
+Feed'
+noerror
+is out "
+abcdefg
+- Hello" NOCOLOR NOPOS TRIM
+
+# without color
+export ansi_color=no
+try 'Section "abcdefg" ; Feed'
+noerror
+is out "
+abcdefg" NOPOS TRIM
+
+# without color
+export ansi_color=no
+try 'Section "First Section"
+Elt Hello
+Section "Second Section"
+Elt Bonjour
+Feed'
+noerror
+is out "
+Second Section
+- Bonjour" NOPOS TRIM
+
+# without color
+export ansi_color=yes
+try 'Section "First Section"
+Elt Hello
+Section "Second Section"
+Elt Bonjour
+Feed'
+noerror
+is out "
+First Section
+- Hello
+
+Second Section
+- Hello
+- Bonjour" NOPOS NOCOLOR TRIM
+
+##
+## Title
+##
+
+# quick check
+# export ansi_color=yes
+# try 'Title test
+# Section "abcdefg"
+# Elt Hello
+# Feed'
+# noerror
+# is out "
+
+#         test
+
+# abcdefg
+#  - Hello" NOCOLOR
+
+summary
+
