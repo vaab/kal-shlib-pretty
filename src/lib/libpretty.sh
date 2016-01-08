@@ -1,3 +1,4 @@
+# -*- mode: shell-script -*-
 ## Begin of libpretty.sh
 
 ## Provides general purpose pretty printing function for feedback
