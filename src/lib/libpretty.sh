@@ -23,6 +23,11 @@ export SIZE_STATUS=8
 include color
 include common
 
+
+## These dependencies are necessary for all functions of this lib
+depends wc sed cat cut egrep grep
+
+
 __esc_char=$(echo -en "\e")
 __color_sequence_regex=$(echo -en "\e\[[0-9]+(;[0-9]+)*m")
 
