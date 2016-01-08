@@ -10,7 +10,7 @@ deb_small_desc="Bourne Again Shell Librairies for scripting"
 deb_long_desc="library to manage pretty printing of OK/FAIL elements"
 
 deb_depends="bash (>= 2.05a-11), awk, sed (>= 3.02-8), grep (>= 2.4.2-3),
-  coreutils (>= 5.0-5), kal-shlib-common (>= 0.2.0)"
+  coreutils (>= 5.0-5), kal-shlib-core (>= 0.4.0), kal-shlib-common (>= 0.2.0)"
 
 deb_conflicts=""
 

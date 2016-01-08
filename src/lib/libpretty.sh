@@ -478,19 +478,4 @@ function Wrap() {
 
 }
 
-
-## Export all function of this file
-
-depends wc sed cat cut egrep grep
-
-__funcnames=$(cat "$BASH_SOURCE" | "$egrep" "^ *function +\w+ *\(\)" | sed_compat 's/^ *function (.+)\(\).*/\1/g' | xargs echo)
-all_functions=$(compgen -A function)
-for __fname in $__funcnames; do
-    ## export only declared functions...
-    if echo "$all_function" | "$grep" "$__fname" > /dev/null; then
-        export -f $__fname
-    fi
-done
-
-
 ## End of libpretty.sh
