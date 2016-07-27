@@ -431,57 +431,55 @@ function print_status() {
 
 function Wrap() {
 
-    local quiet desc errlvl
+    ## We need to name our variables with low probability of
+    ## collision with the wrapped code: this code could want
+    ## to make usage of environment variable.
+    ##
+    ## Declaring local variables doesn't protect us as the code
+    ## will be executed locally in this function.
+    local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
+          __wrap_code __wrap_md5 __wrap_tmp
 
-    quiet=false
-    if [ "$1" == "-q" ]; then
-        quiet=
-        shift
-    fi
-
-    desc=""
-    if [ "$1" == "-d" ]; then
-        desc="$2"
-        shift
-        shift
-    fi
+    ## Hmm, could use a better CLA parsing algo
+    [ "$1" == "-q" ] && { __wrap_quiet= ; shift; }
+    [ "$1" == "-d" ] && { __wrap_desc="$2" ; shift; shift; }
 
     if test -z "$*"; then
-        code=$("$cat" -)
-        [ "$quiet" == false -a -z "$desc" ] &&
+        __wrap_code=$("$cat" -)
+        [ "$__wrap_quiet" == false -a -z "$__wrap_desc" ] &&
         print_error "no description for warp command"
     else
-        code="$*"
-        test -z "$desc" && desc="$*"
+        __wrap_code="$*"
+        test -z "$__wrap_desc" && __wrap_desc="$*"
     fi
 
-    [ "$quiet" ] && Elt "$desc"
-    [ "$quiet" ] && print_info_char "W"
+    [ "$__wrap_quiet" ] && Elt "$__wrap_desc"
+    [ "$__wrap_quiet" ] && print_info_char "W"
 
-    md5="$(echo "$code" | md5_compat)"
-    tmp_wrap="/tmp/wrap.$md5.$$.tmp"
+    __wrap_md5="$(echo "$__wrap_code" | md5_compat)"
+    __wrap_tmp="/tmp/wrap.$__wrap_md5.$$.tmp"
 
-    ( echo "$code" | bash > "$tmp_wrap" 2>&1 )
-
-    errlvl="$?"
-    if [ "$errlvl" == "0" ]; then
-        rm "$tmp_wrap"
-        [ "$quiet" ] && print_status success && Feed
+    ( echo "$__wrap_code" | bash > "$__wrap_tmp" 2>&1 )
+    __wrap_errlvl="$?"
+    if [ "$__wrap_errlvl" == "0" ]; then
+        rm "$__wrap_tmp"
+        [ "$__wrap_quiet" ] && print_status success && Feed
         return 0
     fi
 
-    [ "$quiet" ] && print_status failure && Feed
+    [ "$__wrap_quiet" ] && print_status failure && Feed
 
     echo "${RED}*****${WHITE} ERROR in wrapped command:${NORMAL}"
     echo "${YELLOW}*****${WHITE} code:${NORMAL}"
-    echo "$code"
+    echo "$__wrap_code"
     echo "${YELLOW}>>>>> ${WHITE}Log info follows:$NORMAL "
-    "$cat" "$tmp_wrap"
+    "$cat" "$__wrap_tmp"
     echo "${YELLOW}<<<<< ${WHITE}End Log."
-    echo "${YELLOW}*****$NORMAL errorlevel was : ${WHITE}$errlvl${NORMAL}"
+    echo "${YELLOW}*****$NORMAL errorlevel was : ${WHITE}$__wrap_errlvl${NORMAL}"
 
-    return $errlvl
+    return $__wrap_errlvl
 
 }
+
 
 ## End of libpretty.sh
