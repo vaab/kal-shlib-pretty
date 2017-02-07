@@ -69,7 +69,7 @@ function cutline() {
         "$wc" -c )
 
     ## number of invisible chars
-    __size_diff=$[ $(echo -n "$content" | wc -c) - $__size_content]
+    __size_diff=$[ ${#content} - $__size_content]
 
     size=$[$size + $__size_diff]
 
