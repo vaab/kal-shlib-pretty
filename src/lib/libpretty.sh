@@ -31,6 +31,8 @@ depends wc sed cat cut egrep grep
 __esc_char=$(echo -en "\e")
 __color_sequence_regex=$(echo -en "\e\[[0-9]+(;[0-9]+)*m")
 
+export __color_sequence_regex __esc_char
+
 ## Code
 
 ##
@@ -428,6 +430,7 @@ function print_status() {
     return 0
 }
 
+function errorlevel() { return "${1:-1}"; }
 
 function Wrap() {
 
@@ -459,8 +462,40 @@ function Wrap() {
     __wrap_md5="$(echo "$__wrap_code" | md5_compat)"
     __wrap_tmp="/tmp/wrap.$__wrap_md5.$$.tmp"
 
-    ( echo "$__wrap_code" | bash > "$__wrap_tmp" 2>&1 )
+    (
+        __wrap_ctrl_c=
+        ## Traps SIGINT to continue execution of Wrap function on Ctrl-C
+        trap '__wrap_ctrl_c=true' INT
+        {
+            # trap 'echo "Wrap, trapped2" ' INT
+            {
+                # trap 'echo "Wrap, trapped3" ' INT
+                ## stderr is not buffered while stdout can be, so we must
+                ## force both to be unbuffered if we want to avoid some strange
+                ## mix in the order of some lines.
+                #stdbuf -oL -eL
+                bash -c "$__wrap_code"  |
+                    sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+                ## Pass the real return code of our code to the upper level !
+                errorlevel "${PIPESTATUS[0]}"
+            } 3>&1 1>&2 2>&3 | sed -url1 "s/^/  ${RED}!${NORMAL} /g"  3>&1 1>&2 2>&3
+            errorlevel "${PIPESTATUS[0]}"
+        } > "$__wrap_tmp" 2>&1
+        errlvl="${PIPESTATUS[0]}"
+        [ "$__wrap_ctrl_c" ] && {
+            echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
+            ## XXXvlab: print_info won't be seen because it is in a subprocess
+            ## and won't trickle up the value of the inner variable. As a aconsequence
+            ## Feedback called out side of the parenthesis will delete it.
+            [ "$__wrap_quiet" ] && print_info "Caught SIGINT"
+            echo
+        }
+
+        ## Pass the real return code of our code to the upper level !
+        errorlevel "$errlvl"  ## Return the real return
+    )
     __wrap_errlvl="$?"
+
     if [ "$__wrap_errlvl" == "0" ]; then
         rm "$__wrap_tmp"
         [ "$__wrap_quiet" ] && print_status success && Feed
@@ -468,14 +503,13 @@ function Wrap() {
     fi
 
     [ "$__wrap_quiet" ] && print_status failure && Feed
-
-    echo "${RED}*****${WHITE} ERROR in wrapped command:${NORMAL}"
-    echo "${YELLOW}*****${WHITE} code:${NORMAL}"
-    echo "$__wrap_code"
-    echo "${YELLOW}>>>>> ${WHITE}Log info follows:$NORMAL "
+    echo "${RED}Error in wrapped command:${NORMAL}"
+    echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
+    echo " ${DARKYELLOW}code:${NORMAL}"
+    echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+    echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
     "$cat" "$__wrap_tmp"
-    echo "${YELLOW}<<<<< ${WHITE}End Log."
-    echo "${YELLOW}*****$NORMAL errorlevel was : ${WHITE}$__wrap_errlvl${NORMAL}"
+    rm "$__wrap_tmp"
 
     return $__wrap_errlvl
 
