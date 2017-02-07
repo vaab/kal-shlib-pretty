@@ -16,7 +16,7 @@ From source
 Consider this release as Very Alpha. Use at your own risk. It may or may not
 upgrade to a more user friendly version in future, depending on my spare time.
 
-Nethertheless, this package support GNU install quite well so a simple::
+Nevertheless, this package supports GNU install quite well so a simple::
 
   # autogen.sh && ./configure && make && make install
 
