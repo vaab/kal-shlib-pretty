@@ -63,19 +63,19 @@ function cutline() {
     ## match one char (followed or not by ansi sequence(s))
     __rchar="(($__color_sequence_regex)*[^$__esc_char]($__color_sequence_regex)*)"
     __rcut="^($__rchar{$[$size - 2]})$__rchar{3}.*\$"
-    content="$("$cat" - | sed_compat "s/$__rcut/\1$GRAY../g" )"
+    content="$("$cat" - | sed_compat "s/$__rcut/\1$GRAY..$NORMAL/g" )"
 
     ## size of content wo the ansi color seq
     __size_content=$(echo -n "$content" | \
-        sed_compat "s/$__color_sequence_regex//g" | \
-        "$wc" -c )
+                            sed_compat "s/$__color_sequence_regex//g")
+    __size_content=${#__size_content}
 
     ## number of invisible chars
     __size_diff=$[ ${#content} - $__size_content]
 
     size=$[$size + $__size_diff]
 
-    content="$(printf "%-${size}s" "$content")$NORMAL"
+    content="$(printf "%-${size}s" "$content")"
 
     echo -en "$content"
 }

@@ -1,0 +1,55 @@
+# -*- mode: shell-script -*-
+
+src_file=../src/lib/libpretty.sh
+
+prefix_cmd="
+. /etc/shlib
+
+source '$src_file'
+pretty:init
+"
+
+export COLUMNS=50
+
+
+export ansi_color=yes
+try 'Section "abcdefg"
+Elt Hello
+Feed' \
+    'with color: quick check'
+noerror
+is out "abcdefg
+- Hello" NOCOLOR NOPOS TRIM
+
+export ansi_color=no
+try 'Section "abcdefg" ; Feed' \
+    'without color: quick check'
+noerror
+is out "abcdefg" NOPOS NOCOLOR TRIM
+
+export ansi_color=no
+try 'Section "First Section"
+Elt Hello
+Section "Second Section"
+Elt Bonjour
+Feed' \
+    'without color: changing section and element'
+noerror
+is out "Second Section
+- Bonjour" NOPOS TRIM
+
+export ansi_color=yes
+try 'Section "First Section"
+Elt Hello
+Section "Second Section"
+Elt Bonjour
+Feed' \
+    'with color: changing section and element'
+noerror
+is out "First Section
+- Hello
+
+Second Section
+- Hello
+- Bonjour" NOCOLOR NOPOS TRIM
+

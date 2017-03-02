@@ -1,0 +1,69 @@
+# -*- mode: shell-script -*-
+
+src_file=../src/lib/libpretty.sh
+
+prefix_cmd="
+. /etc/shlib
+
+source '$src_file'
+pretty:init
+"
+
+export COLUMNS=50
+
+
+##
+## Elt
+##
+
+export ansi_color=yes
+try 'Elt "abcdefg" && Feed' \
+    'quick check'
+noerror
+is out "- abcdefg" NOCOLOR NOPOS TRIM
+
+export ansi_color=no
+try 'Elt "abcdefg" ; Feed' \
+    'without color'
+noerror
+is out "- abcdefg" NOPOS TRIM
+
+try '
+ansi_color no
+Elt "abcdefghijklmnopqrstuvxyz"
+print_info "12345678901234567890"
+print_info_char X
+Feedback' \
+    'without color: size of elements are correct'
+noerror
+is out " - abcdefghijkl.. 12345678901234567890 [  OK  ] X
+"
+is out "$COLUMNS" SIZE TRIM
+
+try '
+ansi_color no
+Elt "abcdefghijklmn"
+print_info "12345678901234567890"
+print_info_char U
+Feedback' \
+    'without color: final full line check'
+noerror
+is out " - abcdefghijklmn 12345678901234567890 [  OK  ] U
+"
+
+
+try 'ansi_color yes
+print_list_char " * " # no print
+Elt "abcdefghijklmnopqrstuvxyz"
+print_info "123456789012345678901"
+print_status success
+print_info_char Z
+Feedback' \
+    'with ansi_color, some data are rewritten for each event'
+noerror
+is out "* abcdefghijkl..
+* abcdefghijkl.. 123456789012345678..
+* abcdefghijkl.. 123456789012345678.. [  OK  ]
+* abcdefghijkl.. 123456789012345678.. [  OK  ] Z
+* abcdefghijkl.. 123456789012345678.. [  OK  ] Z" NOPOS NOCOLOR TRIM
+

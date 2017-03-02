@@ -1,0 +1,74 @@
+# -*- mode: shell-script -*-
+
+src_file=../src/lib/libpretty.sh
+
+prefix_cmd="
+. /etc/shlib
+
+source '$src_file'
+pretty:init
+"
+
+export COLUMNS=50
+
+
+
+try 'echo "abcdef" | cutline' \
+    'casts a usage msg'
+is err reg "^usage: cutline.*"
+is errlvl 1
+is out ''
+
+try 'echo -n "abcdef" | cutline 7; echo "!"' \
+    'do not cut on small msg'
+noerror
+is out "abcdef !
+"
+
+try 'echo "abcdefg" | cutline 7' \
+    'no cut on same size msg'
+noerror
+is out "abcdefg" NOCOLOR
+
+try 'echo "abcdefgh" | cutline 7' \
+    'cut on larger msg'
+noerror
+is out "abcde.." NOCOLOR
+
+try '
+ansi_color no
+echo "abcdefgh" | cutline 7' \
+    'without color this is working'
+noerror
+is out "abcde.."
+
+## COLOR in pattern
+
+try '
+ansi_color yes
+echo "ab${BLUE}cdefg" | cutline 7' \
+    'with color same size string'
+noerror
+is out "ab${BLUE}cdefg"
+
+try '
+ansi_color yes
+DEBUG=1
+echo "ab${BLUE}cdefgh" | cutline 7' \
+    'with color larger size is working'
+noerror
+is out "abcde.." NOCOLOR
+is out "ab${BLUE}cde${GRAY}..${NORMAL}"
+
+try '
+ansi_color yes
+DEBUG=1
+echo -n "${BLUE}a${NORMAL}" | cutline 7
+echo "!"' \
+    'with colors'
+noerror
+is out "a      !
+" NOCOLOR
+is out "${BLUE}a${NORMAL}      !
+"
+
