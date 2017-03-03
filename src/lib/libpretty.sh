@@ -455,20 +455,20 @@ function Wrap() {
         ## Traps SIGINT to continue execution of Wrap function on Ctrl-C
         trap '__wrap_ctrl_c=true' INT
         {
-            # trap 'echo "Wrap, trapped2" ' INT
-            {
-                # trap 'echo "Wrap, trapped3" ' INT
-                ## stderr is not buffered while stdout can be, so we must
-                ## force both to be unbuffered if we want to avoid some strange
-                ## mix in the order of some lines.
-                #stdbuf -oL -eL
-                bash -c "$__wrap_code"  |
-                    sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
-                ## Pass the real return code of our code to the upper level !
-                errorlevel "${PIPESTATUS[0]}"
-            } 3>&1 1>&2 2>&3 | sed -url1 "s/^/  ${RED}!${NORMAL} /g"  3>&1 1>&2 2>&3
+            # trap 'echo "Wrap, trapped3" ' INT
+            ## stderr is not buffered while stdout can be, so we must
+            ## force both to be unbuffered if we want to avoid some strange
+            ## mix in the order of some lines.
+
+            stdbuf -oL -eL \
+                   bash -c "$__wrap_code" 2> >(while IFS='' read line; do echo "E$line" >&2; done) |
+                while IFS='' read line; do echo "O$line"; done
+
+            ## Pass the real return code of our code to the upper level !
             errorlevel "${PIPESTATUS[0]}"
-        } > "$__wrap_tmp" 2>&1
+        } |& sed -url1 '
+                  s/^O(.*)$/  | \1/g
+                  s/^E(.*)$/  ! \1/g' > "$__wrap_tmp"
         errlvl="${PIPESTATUS[0]}"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
