@@ -305,7 +305,7 @@ function print_info_char() {
 
     test "$ansi_color" != "no" && __Elt_reset
 
-    __char="${WHITE}$(echo $* | "$cut" -c 1)${NORMAL}"
+    __char="${WHITE}$(echo "$*" | "$cut" -c 1)${NORMAL}"
 
     test "$ansi_color" != "no" && __Elt_print
 
@@ -409,7 +409,7 @@ function print_status() {
             ;;
         *)
             echo "$FUNCNAME: '$1' is a bad first argument."
-            echo $usage_string
+            echo "$usage_string"
             return 1
             ;;
     esac
