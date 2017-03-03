@@ -15,7 +15,6 @@
 ##
 ##
 
-export SIZE_STATUS=8
 
 
 ## Includes
@@ -24,14 +23,6 @@ include color
 include common
 
 
-## These dependencies are necessary for all functions of this lib
-depends wc sed cat cut egrep grep
-
-
-__esc_char=$(echo -en "\e")
-__color_sequence_regex=$(echo -en "\e\[[0-9]+(;[0-9]+)*m")
-
-export __color_sequence_regex __esc_char
 
 ## Code
 
@@ -550,7 +541,14 @@ pretty:init() {
     COL_STATUS=$[$COL_CHAR - $SEP_STATUS_CHAR_SIZE - $SIZE_STATUS]
     COL_INFO=$[$COLUMNS - $SEP_INFO_STATUS_SIZE - $SIZE_INFO]
     COL_ELT=$[$COLUMNS - $SEP_ELT_INFO_SIZE - $SIZE_ELT]
+    ## These dependencies are necessary for all functions of this lib
+    depends wc sed cat cut egrep grep
 
+
+    __esc_char=$(echo -en "\e")
+    __color_sequence_regex=$(echo -en "\e\[[0-9]+(;[0-9]+)*m")
+
+    export __color_sequence_regex __esc_char
 
 
 }
