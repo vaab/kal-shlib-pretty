@@ -10,7 +10,7 @@ pretty:init
 "
 
 export COLUMNS=50
-
+export SIZE_LINE=
 
 ##
 ## Elt
@@ -29,6 +29,7 @@ noerror
 is out "- abcdefg" NOPOS TRIM
 
 try '
+export SIZE_LINE=    ## to avoid sunit vars to conflict with pretty
 ansi_color no
 Elt "abcdefghijklmnopqrstuvxyz"
 print_info "12345678901234567890"
@@ -52,7 +53,9 @@ is out " - abcdefghijklmn 12345678901234567890 [  OK  ] U
 "
 
 
-try 'ansi_color yes
+try '
+export SIZE_LINE=    ## to avoid sunit vars to conflict with pretty
+ansi_color yes
 print_list_char " * " # no print
 Elt "abcdefghijklmnopqrstuvxyz"
 print_info "123456789012345678901"

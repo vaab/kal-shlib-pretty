@@ -161,3 +161,47 @@ output (1):
 |  - Hello                                    *" NOCOLOR NOPOS TRIM
 
 
+
+##
+## Wrapped Elt should use a smaller full line
+##
+
+try '
+ansi_color no
+Wrap -d "Inbed Elt" <<EOF
+
+. /etc/shlib
+
+source '$src_file'
+pretty:init
+
+Elt Toto
+print_info foo
+print_status success
+Feed
+Wrap -d "inner Wrap" true
+false
+EOF' \
+    'Wrap in wrap gets smaller line'
+is errlvl 1
+is err ""
+is out "\
+ - Inbed Elt                           [FAILED] W
+Error in wrapped command:
+ pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+ code:
+  |
+  | . /etc/shlib
+  |
+  | source ../src/lib/libpretty.sh
+  | pretty:init
+  |
+  | Elt Toto
+  | print_info foo
+  | print_status success
+  | Feed
+  | Wrap -d \"inner Wrap\" true
+  | false
+ output (1):
+  |  - Toto       foo                  [  OK  ]
+  |  - inner Wrap                      [  OK  ] W" RTRIM

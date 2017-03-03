@@ -455,6 +455,7 @@ function Wrap() {
         ## Traps SIGINT to continue execution of Wrap function on Ctrl-C
         trap '__wrap_ctrl_c=true' INT
         {
+            ((SIZE_LINE-=4))
             # trap 'echo "Wrap, trapped3" ' INT
             ## stderr is not buffered while stdout can be, so we must
             ## force both to be unbuffered if we want to avoid some strange
@@ -519,7 +520,9 @@ pretty:init() {
            SEP_INFO_STATUS_SIZE SEP_STATUS_CHAR_SIZE
 
 
-    SIZE_LINE=$COLUMNS                            ## full line size
+    if [ -z "$SIZE_LINE" ]; then
+        SIZE_LINE=$COLUMNS                            ## full line size
+    fi
     SIZE_INFO=20                                  ## zone info size in chars
     SIZE_STATUS=8                                 ## status info size in chars
     SIZE_LIST=3                                   ## status info size in chars
@@ -537,10 +540,12 @@ pretty:init() {
 
     export SIZE_LINE SIZE_INFO SIZE_STATUS SIZE_LIST SIZE_CHAR SIZE_ELT
 
-    COL_CHAR=$[$COLUMNS - 1 - $SIZE_CHAR]
+    COL_CHAR=$[$SIZE_LINE - 1 - $SIZE_CHAR]
     COL_STATUS=$[$COL_CHAR - $SEP_STATUS_CHAR_SIZE - $SIZE_STATUS]
-    COL_INFO=$[$COLUMNS - $SEP_INFO_STATUS_SIZE - $SIZE_INFO]
-    COL_ELT=$[$COLUMNS - $SEP_ELT_INFO_SIZE - $SIZE_ELT]
+    COL_INFO=$[$SIZE_LINE - $SEP_INFO_STATUS_SIZE - $SIZE_INFO]
+    COL_ELT=$[$SIZE_LINE - $SEP_ELT_INFO_SIZE - $SIZE_ELT]
+
+
     ## These dependencies are necessary for all functions of this lib
     depends wc sed cat cut egrep grep
 
