@@ -116,3 +116,48 @@ EOF' \
     'Description Wrap succeeding with quiet mode'
 is out "" NOCOLOR TRIM
 
+
+##
+## Wrapped Elt should not collide
+##
+
+try '
+ansi_color yes
+Wrap -d "Inbed Elt" <<EOF
+
+. /etc/shlib
+
+source '$src_file'
+pretty:init
+
+ansi_color yes
+print_info_char "*"
+Elt Hello; Feed
+false
+
+EOF' \
+    'Elt in Wrap should not collide'
+is errlvl 1
+is err ""
+is out "\
+- Inbed Elt
+- Inbed Elt                                    W
+- Inbed Elt                           [FAILED] W
+Error in wrapped command:
+pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+code:
+|
+| . /etc/shlib
+|
+| source ../src/lib/libpretty.sh
+| pretty:init
+|
+| ansi_color yes
+| print_info_char \"*\"
+| Elt Hello; Feed
+| false
+output (1):
+|  -                                          *
+|  - Hello                                    *" NOCOLOR NOPOS TRIM
+
+

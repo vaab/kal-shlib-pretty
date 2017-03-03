@@ -186,7 +186,6 @@ function Elt() {
 
     test "$ansi_color" != "no" && __Elt_print
 
-    export __elt
     return $errlvl
 }
 
@@ -206,8 +205,6 @@ function print_list_char() {
     __listchar="$__content"
 
     test "$ansi_color" != "no" && __Elt_print
-
-    export __listchar
 
     return $errlvl
 }
