@@ -306,3 +306,117 @@ Error in wrapped command:
   | exit 63" RTRIM
 
 
+##
+## Customizable prefixes
+##
+
+try '
+WRAP_PREFIX_STDOUT="  O:"
+WRAP_PREFIX_STDERR="  E:"
+WRAP_PREFIX_CODE="  C:"
+
+Wrap -q -d "My failing command" <<EOF
+
+echo "out"
+false
+
+EOF' \
+    'Wrap may customize prefix'
+is out reg "\
+Error in wrapped command:
+ pwd: [^$NL]*
+ code:
+  C:
+  C:echo \"out\"
+  C:false
+ output \(1\):
+  O:out" NOCOLOR RTRIM
+
+try '
+WRAP_PREFIX_STDOUT="  O:"
+WRAP_PREFIX_STDERR="  E:"
+WRAP_PREFIX_CODE="  C:"
+
+Wrap -q -d "My failing command" <<EOF
+
+echo "err" >&2
+false
+
+EOF' \
+    'Wrap may customize prefix'
+is out reg "\
+Error in wrapped command:
+ pwd: [^$NL]*
+ code:
+  C:
+  C:echo \"err\" >&2
+  C:false
+ output \(1\):
+  E:err" NOCOLOR RTRIM
+
+
+##
+## Wrapped stderr and stdin should not mix
+##
+
+## This is an unsolved problem: annotate-output man page shows that
+## it is a complex problem.
+
+# export CODE=$'\
+# echo "00 in voluptate velit esse c" >&2
+# echo "01 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
+# echo "02 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad" >&2
+# echo "03 minim"
+# echo "04 aliquip ex ea commodo consequat. Duis aute irure dolor in" >&2
+# echo "05 reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+# echo "06 nulla pariatur. Excepteur sint occaecat cupidatat non proident," >&2
+# echo "07 sunt in culpa qui officia deserunt mollit anim id est laborum."
+# echo "08 ui officia deserunt mollit" >&2
+# echo "09 minim veniam, quis nostrud exercitation"
+# echo "10 nulla pariatur." >&2
+# echo "11 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
+# echo "12 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad" >&2
+# echo "13 minim veniam, quis nostrud exercitation ullamco laboris nisi ut"
+# echo "14 aliquip ex ea commodo consequat. Duis aute irure dolor in" >&2
+# echo "15 reprehenderit in voluptate velit esse cillum dolore eu fugiat in voluptate velit esse cillum dolore eu fugiat"
+# echo "16 nu" >&2
+# echo "17 sunt in culpa qui officia deserunt mollit anim id est laborum in voluptate velit esse cillum dolore eu fugiat."
+# echo "18 sint occaecat cupidatat non" >&2
+# echo "19 velit esse cillum"
+# false
+# '
+
+# try '
+# Wrap -d "interweaved stderr and stdin" <<EOF
+# $CODE
+# EOF
+# ' 'prevent mixed stderr and stdin'
+# is err ''
+# is out ' - interweaved ..
+#  - interweaved ..                               W
+#  - interweaved ..                      [FAILED] W
+# Error in wrapped command:
+#  pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+#  code:
+# '"$(echo "$CODE" | sed -r 's/^/  | /g' | head -n -1)"'
+#  output (1):
+#   ! 00 in voluptate velit esse c
+#   | 01 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+#   ! 02 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+#   | 03 minim
+#   ! 04 aliquip ex ea commodo consequat. Duis aute irure dolor in
+#   | 05 reprehenderit in voluptate velit esse cillum dolore eu fugiat
+#   ! 06 nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+#   | 07 sunt in culpa qui officia deserunt mollit anim id est laborum.
+#   ! 08 ui officia deserunt mollit
+#   | 09 minim veniam, quis nostrud exercitation
+#   ! 10 nulla pariatur.
+#   | 11 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+#   ! 12 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+#   | 13 minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+#   ! 14 aliquip ex ea commodo consequat. Duis aute irure dolor in
+#   | 15 reprehenderit in voluptate velit esse cillum dolore eu fugiat in voluptate velit esse cillum dolore eu fugiat
+#   ! 16 nu
+#   | 17 sunt in culpa qui officia deserunt mollit anim id est laborum in voluptate velit esse cillum dolore eu fugiat.
+#   ! 18 sint occaecat cupidatat non
+#   | 19 velit esse cillum' NOPOS NOCOLOR RTRIM

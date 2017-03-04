@@ -447,6 +447,9 @@ function Wrap() {
         esac
     done < <(cla.normalize "$@")
 
+    WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
+    WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
+    WRAP_PREFIX_CODE=${WRAP_PREFIX_CODE:-"  ${GRAY}|${NORMAL} "}
 
     if [ "${#cmdline[@]}" == 0 ]; then
         __wrap_code=$("$cat" -)
@@ -487,9 +490,9 @@ function Wrap() {
 
             ## Pass the real return code of our code to the upper level !
             errorlevel "${PIPESTATUS[0]}"
-        } |& sed -url1 '
-                  s/^O(.*)$/  | \1/g
-                  s/^E(.*)$/  ! \1/g' | $__wrap_log_method
+        } |& sed -url1 "
+                  s/^O/${WRAP_PREFIX_STDOUT}/g
+                  s/^E/${WRAP_PREFIX_STDERR}/g" | $__wrap_log_method
         errlvl="${PIPESTATUS[0]}"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
@@ -522,7 +525,7 @@ function Wrap() {
         echo "${RED}Error in wrapped command:${NORMAL}"
         echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
         echo " ${DARKYELLOW}code:${NORMAL}"
-        echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+        echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
         echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
         "$cat" "$__wrap_tmp"
         rm "$__wrap_tmp"
@@ -536,10 +539,9 @@ function Wrap() {
         echo "${RED}Error in wrapped command:${NORMAL}"
         echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
         echo " ${DARKYELLOW}code:${NORMAL}"
-        echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+        echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
     fi
     return $__wrap_errlvl
-
 }
 
 
