@@ -520,27 +520,25 @@ function Wrap() {
         return 0
     fi
 
-    if [ "$__wrap_log_method" != "cat" ]; then
-        [ "$__wrap_quiet" ] && print_status failure && Feed
-        echo "${RED}Error in wrapped command:${NORMAL}"
-        echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
-        echo " ${DARKYELLOW}code:${NORMAL}"
-        echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
+    [ "$__wrap_quiet" ] && {
+        [ "$__wrap_log_method" == "cat" ] && {
+            print_list_char " "
+            Elt " .. $__wrap_desc"
+        }
+        print_status failure
+        Feed
+    }
+
+    echo "${RED}Error in wrapped command:${NORMAL}"
+    echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
+    echo " ${DARKYELLOW}code:${NORMAL}"
+    echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
+
+    [ "$__wrap_log_method" == "cat" ] || {
         echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
         "$cat" "$__wrap_tmp"
         rm "$__wrap_tmp"
-    else
-        [ "$__wrap_quiet" ] && {
-                print_list_char " "
-                Elt " .. $__wrap_desc"
-                print_status failure
-                Feed
-        }
-        echo "${RED}Error in wrapped command:${NORMAL}"
-        echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
-        echo " ${DARKYELLOW}code:${NORMAL}"
-        echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
-    fi
+    }
     return $__wrap_errlvl
 }
 
