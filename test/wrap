@@ -235,3 +235,74 @@ Error in wrapped command:
  output (1):
   |  - Toto       foo                  [  OK  ]
   |  - inner Wrap                      [  OK  ] W" RTRIM
+
+
+##
+## Wrap in verbose mode
+##
+
+try '
+export VERBOSE=true
+ansi_color no
+Wrap -v -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -v in VERBOSE mode'
+noerror
+is out "\
+ - Simple         output follows                W
+  | hello
+  .. Simple                          [  OK  ]" RTRIM
+
+try '
+export VERBOSE=
+ansi_color no
+Wrap -v -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -v not in VERBOSE mode'
+noerror
+is out "\
+ - Simple                              [  OK  ] W" RTRIM
+
+try '
+export VERBOSE=
+ansi_color no
+Wrap -v -d "Simple" <<EOF
+echo hello
+exit 63
+EOF' \
+    'failing Wrap -v not in VERBOSE mode'
+is errlvl 63
+is out reg "\
+ - Simple                              [FAILED] W
+Error in wrapped command:
+ pwd: [^$NL]*
+ code:
+  | echo hello
+  | exit 63
+ output (63):
+  | hello" RTRIM
+
+try '
+export VERBOSE=true
+ansi_color no
+Wrap -v -d "Simple" <<EOF
+echo hello
+exit 63
+EOF' \
+    'failing Wrap -v in VERBOSE mode'
+is errlvl 63
+is out "\
+ - Simple         output follows                W
+  | hello
+  .. Simple                          [FAILED]
+Error in wrapped command:
+ pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+ code:
+  | echo hello
+  | exit 63" RTRIM
+
+

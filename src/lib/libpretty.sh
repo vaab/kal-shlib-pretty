@@ -420,6 +420,12 @@ function print_status() {
 
 function errorlevel() { return "${1:-1}"; }
 
+
+wrap:log_save() {
+    local filename="$1"
+    cat > "$filename"
+}
+
 function Wrap() {
 
     ## We need to name our variables with low probability of
@@ -429,16 +435,18 @@ function Wrap() {
     ## Declaring local variables doesn't protect us as the code
     ## will be executed locally in this function.
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
-          __wrap_code __wrap_md5 __wrap_tmp
+          __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method=""
 
     cmdline=()
     while read-0 arg; do
         case "$arg" in
             "-q") __wrap_quiet=;;
             "-d") __wrap_desc="$(next-0)";;
+            "-v") [ "$VERBOSE" ] && __wrap_log_method=cat;;
             *) cmdline+=("$arg");;
         esac
     done < <(cla.normalize "$@")
+
 
     if [ "${#cmdline[@]}" == 0 ]; then
         __wrap_code=$("$cat" -)
@@ -449,12 +457,19 @@ function Wrap() {
         test -z "$__wrap_desc" && __wrap_desc="$*"
     fi
 
-    [ "$__wrap_quiet" ] && Elt "$__wrap_desc"
-    [ "$__wrap_quiet" ] && print_info_char "W"
+    [ "$__wrap_quiet" ] && {
+        Elt "$__wrap_desc"
+        print_info_char "W"
+        [ "$__wrap_log_method" == "cat" ] && {
+            print_info "output follows"
+        }
+    }
+
+    [ "$__wrap_log_method" == "cat" ] && Feed
 
     __wrap_md5="$(echo "$__wrap_code" | md5_compat)"
     __wrap_tmp="/tmp/wrap.$__wrap_md5.$$.tmp"
-
+    __wrap_log_method="${__wrap_log_method:-wrap:log_save $__wrap_tmp}"
     (
         __wrap_ctrl_c=
         ## Traps SIGINT to continue execution of Wrap function on Ctrl-C
@@ -474,7 +489,7 @@ function Wrap() {
             errorlevel "${PIPESTATUS[0]}"
         } |& sed -url1 '
                   s/^O(.*)$/  | \1/g
-                  s/^E(.*)$/  ! \1/g' > "$__wrap_tmp"
+                  s/^E(.*)$/  ! \1/g' | $__wrap_log_method
         errlvl="${PIPESTATUS[0]}"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
@@ -491,20 +506,38 @@ function Wrap() {
     __wrap_errlvl="$?"
 
     if [ "$__wrap_errlvl" == "0" ]; then
-        rm "$__wrap_tmp"
-        [ "$__wrap_quiet" ] && print_status success && Feed
+        [ "$__wrap_log_method" == "cat" ] || rm "$__wrap_tmp"
+        [ "$__wrap_quiet" ] && {
+            [ "$__wrap_log_method" == "cat" ] && {
+                print_list_char " "
+                Elt " .. $__wrap_desc"
+            }
+            print_status success && Feed
+        }
         return 0
     fi
 
-    [ "$__wrap_quiet" ] && print_status failure && Feed
-    echo "${RED}Error in wrapped command:${NORMAL}"
-    echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
-    echo " ${DARKYELLOW}code:${NORMAL}"
-    echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
-    echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
-    "$cat" "$__wrap_tmp"
-    rm "$__wrap_tmp"
-
+    if [ "$__wrap_log_method" != "cat" ]; then
+        [ "$__wrap_quiet" ] && print_status failure && Feed
+        echo "${RED}Error in wrapped command:${NORMAL}"
+        echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
+        echo " ${DARKYELLOW}code:${NORMAL}"
+        echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+        echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
+        "$cat" "$__wrap_tmp"
+        rm "$__wrap_tmp"
+    else
+        [ "$__wrap_quiet" ] && {
+                print_list_char " "
+                Elt " .. $__wrap_desc"
+                print_status failure
+                Feed
+        }
+        echo "${RED}Error in wrapped command:${NORMAL}"
+        echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
+        echo " ${DARKYELLOW}code:${NORMAL}"
+        echo "$__wrap_code" | sed -url1 "s/^/  ${GRAY}|${NORMAL} /g"
+    fi
     return $__wrap_errlvl
 
 }
