@@ -384,6 +384,38 @@ is out part '
 
 
 ##
+## Subshelling
+##
+
+try '
+
+myvar=2
+Wrap -sd "My failing command" <<EOF
+
+echo "usage of double quote"
+echo '"'usage of single quote'"'
+echo \$myvar
+return 77
+
+EOF' \
+    'using subshell to keep env'
+is err ''
+is errlvl 77
+is out part "
+ code:
+  |
+  | echo \"usage of double quote\"
+  | echo 'usage of single quote'
+  | echo \$myvar
+  | return 77
+ output (77):
+  | usage of double quote
+  | usage of single quote
+  | 2" NOPOS NOCOLOR RTRIM
+
+
+
+##
 ## Wrapped stderr and stdin should not mix
 ##
 

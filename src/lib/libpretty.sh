@@ -436,7 +436,7 @@ function Wrap() {
     ## will be executed locally in this function.
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
           __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method="" \
-          __wrap_line_sed __wrap_line_sed_prefixed
+          __wrap_line_sed __wrap_line_sed_prefixed cmdline subshell
 
     WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
     WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
@@ -447,6 +447,7 @@ function Wrap() {
     WRAP_LINE_WRAP_SIZE=$((SIZE_LINE - 5))
 
     cmdline=()
+    subshell=
     while read-0 arg; do
         case "$arg" in
             "-q") __wrap_quiet=;;
@@ -455,7 +456,8 @@ function Wrap() {
             "-w")
                 __wrap_line_sed="s/([^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
                 __wrap_line_sed_prefixed="s/((^.)?[^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
-            ;;
+                ;;
+            "-s") subshell=true;;
             *) cmdline+=("$arg");;
         esac
     done < <(cla.normalize "$@")
@@ -465,9 +467,17 @@ function Wrap() {
         __wrap_code=$("$cat" -)
         [ "$__wrap_quiet" == false -a -z "$__wrap_desc" ] &&
         print_error "no description for warp command"
+        if [ -z "$subshell" ]; then
+            cmdline=("bash" "-c" "$__wrap_code")
+        else
+            cmdline=(eval "$__wrap_code")
+        fi
     else
         __wrap_code="${cmdline[*]}"
         test -z "$__wrap_desc" && __wrap_desc="$*"
+        if [ -z "$subshell" ]; then
+            cmdline=("bash" "-c" "${cmdline[*]}")
+        fi
     fi
 
     [ "$__wrap_quiet" ] && {
@@ -493,8 +503,10 @@ function Wrap() {
             ## stderr is not buffered while stdout can be, so we must
             ## force both to be unbuffered if we want to avoid some strange
             ## mix in the order of some lines.
-            stdbuf -oL -eL \
-                   bash -c "$__wrap_code" 2> >(while IFS='' read line; do echo "E$line" >&2; done) |
+            ## ``stdbuf`` does not seem to really improve the situation
+            ## and is not compatible with subshelling mode.
+            # stdbuf -oL -eL \
+            "${cmdline[@]}" 2> >(while IFS='' read line; do echo "E$line" >&2; done) |
                 while IFS='' read line; do echo "O$line"; done
 
             ## Pass the real return code of our code to the upper level !
