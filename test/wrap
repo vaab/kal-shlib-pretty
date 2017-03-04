@@ -84,6 +84,36 @@ code:
 | false
 output (1):" NOCOLOR TRIM
 
+
+try 'Wrap -qd "My failing command" "false"' \
+    'support of aggregated single chars options'
+is out reg "\
+Error in wrapped command:
+pwd: [^$NL]+
+code:
+| false
+output (1):" NOCOLOR TRIM
+
+
+try 'Wrap -qd="My failing command" "false"' \
+    'support of "=" usage for specifying option values'
+is out reg "\
+Error in wrapped command:
+pwd: [^$NL]+
+code:
+| false
+output (1):" NOCOLOR TRIM
+
+try 'Wrap -qd="My failing command" -- "false -d -q "' \
+    'support of -- for not interpreting remainder of command line'
+is out reg "\
+Error in wrapped command:
+pwd: [^$NL]+
+code:
+| false -d -q
+output (1):" NOCOLOR TRIM
+
+
 ##
 ## EOF Mode
 ##

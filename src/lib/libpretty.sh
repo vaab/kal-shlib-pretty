@@ -21,7 +21,7 @@
 
 include color
 include common
-
+include cla
 
 
 ## Code
@@ -431,16 +431,21 @@ function Wrap() {
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
           __wrap_code __wrap_md5 __wrap_tmp
 
-    ## Hmm, could use a better CLA parsing algo
-    [ "$1" == "-q" ] && { __wrap_quiet= ; shift; }
-    [ "$1" == "-d" ] && { __wrap_desc="$2" ; shift; shift; }
+    cmdline=()
+    while read-0 arg; do
+        case "$arg" in
+            "-q") __wrap_quiet=;;
+            "-d") __wrap_desc="$(next-0)";;
+            *) cmdline+=("$arg");;
+        esac
+    done < <(cla.normalize "$@")
 
-    if test -z "$*"; then
+    if [ "${#cmdline[@]}" == 0 ]; then
         __wrap_code=$("$cat" -)
         [ "$__wrap_quiet" == false -a -z "$__wrap_desc" ] &&
         print_error "no description for warp command"
     else
-        __wrap_code="$*"
+        __wrap_code="${cmdline[*]}"
         test -z "$__wrap_desc" && __wrap_desc="$*"
     fi
 
