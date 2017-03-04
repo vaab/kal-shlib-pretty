@@ -487,25 +487,23 @@ function Wrap() {
         __wrap_ctrl_c=
         ## Traps SIGINT to continue execution of Wrap function on Ctrl-C
         trap '__wrap_ctrl_c=true' INT
+        set -o pipefail
         {
             ((SIZE_LINE-=4))
-            # trap 'echo "Wrap, trapped3" ' INT
             ## stderr is not buffered while stdout can be, so we must
             ## force both to be unbuffered if we want to avoid some strange
             ## mix in the order of some lines.
-
             stdbuf -oL -eL \
                    bash -c "$__wrap_code" 2> >(while IFS='' read line; do echo "E$line" >&2; done) |
                 while IFS='' read line; do echo "O$line"; done
 
             ## Pass the real return code of our code to the upper level !
-            errorlevel "${PIPESTATUS[0]}"
         } |& sed -url1 "
                   $__wrap_line_sed_prefixed
                   s/^O/${WRAP_PREFIX_STDOUT}/g
                   s/^E/${WRAP_PREFIX_STDERR}/g
                   " | $__wrap_log_method
-        errlvl="${PIPESTATUS[0]}"
+        errlvl="$?"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
             ## XXXvlab: print_info won't be seen because it is in a subprocess
