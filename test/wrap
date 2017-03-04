@@ -356,6 +356,34 @@ Error in wrapped command:
 
 
 ##
+## Line wrapping
+##
+
+try '
+Wrap -wd "My failing command" <<EOF
+
+echo "15 reprehenderit in voluptate velit esse cillum dolore eu fugiat in voluptate velit esse cillum dolore eu fugiat reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+false
+
+EOF' \
+    'line wrapping occuring'
+is out part '
+ code:
+  |
+  | echo "15 reprehenderit in voluptate velit ess\
+   .e cillum dolore eu fugiat in voluptate velit \
+   .esse cillum dolore eu fugiat reprehenderit in\
+   . voluptate velit esse cillum dolore eu fugiat\
+   ."
+  | false
+ output (1):
+  | 15 reprehenderit in voluptate velit esse cill\
+   .um dolore eu fugiat in voluptate velit esse c\
+   .illum dolore eu fugiat reprehenderit in volup\
+   .tate velit esse cillum dolore eu fugiat' NOPOS NOCOLOR RTRIM
+
+
+##
 ## Wrapped stderr and stdin should not mix
 ##
 

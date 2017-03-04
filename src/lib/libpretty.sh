@@ -435,7 +435,16 @@ function Wrap() {
     ## Declaring local variables doesn't protect us as the code
     ## will be executed locally in this function.
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
-          __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method=""
+          __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method="" \
+          __wrap_line_sed __wrap_line_sed_prefixed
+
+    WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
+    WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
+    WRAP_PREFIX_CODE=${WRAP_PREFIX_CODE:-"  ${GRAY}|${NORMAL} "}
+    WRAP_PREFIX_STDOUT_CONTINUATION="   ${GRAY}.${NORMAL}"
+    WRAP_PREFIX_STDERR_CONTINUATION="   ${DARKRED}.${NORMAL}"
+    WRAP_LINE_WRAP_CHAR="${DARKYELLOW}\\\\${NORMAL}"
+    WRAP_LINE_WRAP_SIZE=$((SIZE_LINE - 5))
 
     cmdline=()
     while read-0 arg; do
@@ -443,13 +452,14 @@ function Wrap() {
             "-q") __wrap_quiet=;;
             "-d") __wrap_desc="$(next-0)";;
             "-v") [ "$VERBOSE" ] && __wrap_log_method=cat;;
+            "-w")
+                __wrap_line_sed="s/([^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
+                __wrap_line_sed_prefixed="s/((^.)?[^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
+            ;;
             *) cmdline+=("$arg");;
         esac
     done < <(cla.normalize "$@")
 
-    WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
-    WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
-    WRAP_PREFIX_CODE=${WRAP_PREFIX_CODE:-"  ${GRAY}|${NORMAL} "}
 
     if [ "${#cmdline[@]}" == 0 ]; then
         __wrap_code=$("$cat" -)
@@ -491,8 +501,10 @@ function Wrap() {
             ## Pass the real return code of our code to the upper level !
             errorlevel "${PIPESTATUS[0]}"
         } |& sed -url1 "
+                  $__wrap_line_sed_prefixed
                   s/^O/${WRAP_PREFIX_STDOUT}/g
-                  s/^E/${WRAP_PREFIX_STDERR}/g" | $__wrap_log_method
+                  s/^E/${WRAP_PREFIX_STDERR}/g
+                  " | $__wrap_log_method
         errlvl="${PIPESTATUS[0]}"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
@@ -532,7 +544,9 @@ function Wrap() {
     echo "${RED}Error in wrapped command:${NORMAL}"
     echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
     echo " ${DARKYELLOW}code:${NORMAL}"
-    echo "$__wrap_code" | sed -url1 "s/^/${WRAP_PREFIX_CODE}/g"
+    echo "$__wrap_code" | sed -url1 "
+              $__wrap_line_sed
+              s/^/${WRAP_PREFIX_CODE}/g"
 
     [ "$__wrap_log_method" == "cat" ] || {
         echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
