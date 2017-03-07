@@ -489,6 +489,40 @@ is out part '
  output (1):' NOPOS NOCOLOR RTRIM
 is errlvl 1
 
+
+##
+## No error reports
+##
+
+
+setup() {
+    :
+}
+
+
+try '
+ansi_color no
+Wrap -sd "my cmd" --no-error-report false
+' 'preventing error reports to be printed'
+is err ''
+is out ' - my cmd                              [FAILED] W' NOPOS NOCOLOR RTRIM
+is errlvl 1
+
+try '
+ansi_color yes
+VERBOSE=yes
+Wrap -vsd "my cmd" --no-error-report echo "foo"
+' 'preventing error reports to be printed'
+is err ''
+is out ' - my cmd
+ - my cmd                                       W
+ - my cmd         output follows                W
+  | foo
+  .. my cmd
+  .. my cmd                            [  OK  ]' NOPOS NOCOLOR RTRIM
+is errlvl 0
+
+
 ##
 ## Wrapped stderr and stdin should not mix
 ##

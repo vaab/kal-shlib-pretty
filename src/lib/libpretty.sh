@@ -437,7 +437,7 @@ function Wrap() {
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
           __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method="" \
           __wrap_line_sed __wrap_line_sed_prefixed cmdline subshell \
-          cmdtype i
+          cmdtype i __wrap_no_error_report
 
     WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
     WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
@@ -453,6 +453,7 @@ function Wrap() {
     while read-0 arg; do
         case "$arg" in
             "-q") __wrap_quiet=;;
+            "--no-error-report") __wrap_no_error_report=yes;;
             "-d") __wrap_desc="$(next-0)";;
             "-v") [ "$VERBOSE" ] && __wrap_log_method=cat;;
             "-w")
@@ -529,16 +530,17 @@ function Wrap() {
     )
     __wrap_errlvl="$?"
 
-    if [ "$__wrap_errlvl" == "0" ]; then
+    if [ "$__wrap_no_error_report" -o "$__wrap_errlvl" == "0" ]; then
         [ "$__wrap_log_method" == "cat" ] || rm "$__wrap_tmp"
         [ "$__wrap_quiet" ] && {
             [ "$__wrap_log_method" == "cat" ] && {
                 print_list_char "  ."
                 Elt ". $__wrap_desc"
             }
-            print_status success && Feed
+            errorlevel "$__wrap_errlvl"
+            Feedback
         }
-        return 0
+        return "$__wrap_errlvl"
     fi
 
     [ "$__wrap_quiet" ] && {
