@@ -192,7 +192,7 @@ function print_list_char() {
 
     test "$ansi_color" != "no" && __ListChar_reset
 
-    __content="$(echo -n "$*" | cut -c -$SIZE_LIST)"
+    __content="$(echo -n "$*" | cutline $SIZE_LIST)"
     __listchar="$__content"
 
     test "$ansi_color" != "no" && __Elt_print

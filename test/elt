@@ -56,7 +56,7 @@ is out " - abcdefghijklmn 12345678901234567890 [  OK  ] U
 try '
 export SIZE_LINE=    ## to avoid sunit vars to conflict with pretty
 ansi_color yes
-print_list_char " * " # no print
+print_list_char "\>" # no print, and size inf to allowed
 Elt "abcdefghijklmnopqrstuvxyz"
 print_info "123456789012345678901"
 print_status success
@@ -64,9 +64,9 @@ print_info_char Z
 Feedback' \
     'with ansi_color, some data are rewritten for each event'
 noerror
-is out "* abcdefghijkl..
-* abcdefghijkl.. 123456789012345678..
-* abcdefghijkl.. 123456789012345678.. [  OK  ]
-* abcdefghijkl.. 123456789012345678.. [  OK  ] Z
-* abcdefghijkl.. 123456789012345678.. [  OK  ] Z" NOPOS NOCOLOR TRIM
+is out '\> abcdefghijkl..
+\> abcdefghijkl.. 123456789012345678..
+\> abcdefghijkl.. 123456789012345678.. [  OK  ]
+\> abcdefghijkl.. 123456789012345678.. [  OK  ] Z
+\> abcdefghijkl.. 123456789012345678.. [  OK  ] Z' NOPOS NOCOLOR RTRIM
 
