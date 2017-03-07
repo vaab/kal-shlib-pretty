@@ -518,11 +518,6 @@ function Wrap() {
         errlvl="$?"
         [ "$__wrap_ctrl_c" ] && {
             echo -n "$LEFT$LEFT  $LEFT$LEFT"  ## Removes the '^C\n' display
-            ## XXXvlab: print_info won't be seen because it is in a subprocess
-            ## and won't trickle up the value of the inner variable. As a aconsequence
-            ## Feedback called out side of the parenthesis will delete it.
-            [ "$__wrap_quiet" ] && print_info "Caught SIGINT"
-            echo
         }
 
         ## Pass the real return code of our code to the upper level !
@@ -534,8 +529,8 @@ function Wrap() {
         [ "$__wrap_log_method" == "cat" ] || rm "$__wrap_tmp"
         [ "$__wrap_quiet" ] && {
             [ "$__wrap_log_method" == "cat" ] && {
-                print_list_char " "
-                Elt " .. $__wrap_desc"
+                print_list_char "  ."
+                Elt ". $__wrap_desc"
             }
             print_status success && Feed
         }
@@ -543,9 +538,12 @@ function Wrap() {
     fi
 
     [ "$__wrap_quiet" ] && {
+        ## bash garantees that errorlevel of sub proc is 127 + sig number
+        [ "$__wrap_errlvl" == 130 ] && print_info "Caught SIGINT"
         [ "$__wrap_log_method" == "cat" ] && {
-            print_list_char " "
-            Elt " .. $__wrap_desc"
+            [ "$__wrap_errlvl" == 130 ] || print_info "errorlevel $__wrap_errlvl"
+            print_list_char "  ."
+            Elt ". $__wrap_desc"
         }
         print_status failure
         Feed
