@@ -463,6 +463,33 @@ is errlvl 0
 
 
 ##
+## Command type
+##
+
+
+setup() {
+    :
+}
+
+try '
+Wrap -sd "my cmd" false a "b c" "d
+e
+f"
+' 'when command is array, display it as is'
+is err ''
+is out part '
+ cmdline:
+  $1: false
+  $2: a
+  $3: b c
+  $4: |
+  | d
+  | e
+  | f
+ output (1):' NOPOS NOCOLOR RTRIM
+is errlvl 1
+
+##
 ## Wrapped stderr and stdin should not mix
 ##
 

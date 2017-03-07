@@ -436,7 +436,8 @@ function Wrap() {
     ## will be executed locally in this function.
     local __wrap_quiet=false __wrap_desc="" __wrap_errlvl \
           __wrap_code __wrap_md5 __wrap_tmp __wrap_log_method="" \
-          __wrap_line_sed __wrap_line_sed_prefixed cmdline subshell
+          __wrap_line_sed __wrap_line_sed_prefixed cmdline subshell \
+          cmdtype i
 
     WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
     WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
@@ -448,6 +449,7 @@ function Wrap() {
 
     cmdline=()
     subshell=
+    cmdtype=array
     while read-0 arg; do
         case "$arg" in
             "-q") __wrap_quiet=;;
@@ -464,6 +466,7 @@ function Wrap() {
 
 
     if [ "${#cmdline[@]}" == 0 ]; then
+        cmdtype=string
         __wrap_code=$("$cat" -)
         [ "$__wrap_quiet" == false -a -z "$__wrap_desc" ] &&
         print_error "no description for warp command"
@@ -476,6 +479,7 @@ function Wrap() {
         __wrap_code="${cmdline[*]}"
         test -z "$__wrap_desc" && __wrap_desc="$*"
         if [ -z "$subshell" ]; then
+            cmdtype=string
             cmdline=("bash" "-c" "${cmdline[*]}")
         fi
     fi
@@ -551,11 +555,27 @@ function Wrap() {
 
     echo "${RED}Error in wrapped command:${NORMAL}"
     echo " ${DARKYELLOW}pwd:${NORMAL} $BLUE$PWD$NORMAL"
-    echo " ${DARKYELLOW}code:${NORMAL}"
-    echo "$__wrap_code" | sed -url1 "
+    if [ "$cmdtype" == string ]; then
+        echo " ${DARKYELLOW}code:${NORMAL}"
+        echo "$__wrap_code" | sed -url1 "
               $__wrap_line_sed
               s/^/${WRAP_PREFIX_CODE}/g"
-
+    else
+        echo " ${DARKYELLOW}cmdline:${NORMAL}"
+        i=0
+        for cmd in "${cmdline[@]}"; do
+            ((i++))
+            if [ "$(echo "$cmd" | wc -l)" -gt 1 ]; then
+                echo "  $DARKYELLOW\$$i: |$NORMAL "
+                echo "$cmd" | sed -url1 "
+              $__wrap_line_sed
+              s/^/${WRAP_PREFIX_CODE}/g"
+            else
+                echo -n "  $DARKYELLOW\$$i:$NORMAL "
+                echo "$cmd"
+            fi
+        done
+    fi
     [ "$__wrap_log_method" == "cat" ] || {
         echo " ${DARKYELLOW}output (${YELLOW}$__wrap_errlvl${NORMAL})${DARKYELLOW}:${NORMAL}"
         "$cat" "$__wrap_tmp"
