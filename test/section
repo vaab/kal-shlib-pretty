@@ -18,14 +18,16 @@ Elt Hello
 Feed' \
     'with color: quick check'
 noerror
-is out "abcdefg
-- Hello" NOCOLOR NOPOS TRIM
+is out "
+abcdefg
+ - Hello" NOCOLOR NOPOS RTRIM
 
 export ansi_color=no
 try 'Section "abcdefg" ; Feed' \
     'without color: quick check'
 noerror
-is out "abcdefg" NOPOS NOCOLOR TRIM
+is out "
+abcdefg" NOPOS NOCOLOR RTRIM
 
 export ansi_color=no
 try 'Section "First Section"
@@ -35,8 +37,9 @@ Elt Bonjour
 Feed' \
     'without color: changing section and element'
 noerror
-is out "Second Section
-- Bonjour" NOPOS TRIM
+is out "
+Second Section
+ - Bonjour" NOPOS RTRIM
 
 export ansi_color=yes
 try 'Section "First Section"
@@ -46,10 +49,11 @@ Elt Bonjour
 Feed' \
     'with color: changing section and element'
 noerror
-is out "First Section
-- Hello
+is out "
+First Section
+ - Hello
 
 Second Section
-- Hello
-- Bonjour" NOCOLOR NOPOS TRIM
+ - Hello
+ - Bonjour" NOCOLOR NOPOS RTRIM
 

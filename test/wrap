@@ -12,10 +12,6 @@ pretty:init
 export COLUMNS=50
 
 
-##
-## Elt
-##
-
 try 'Wrap "true"' \
     'with color: "Wrap true" expected sequence of output'
 noerror
@@ -26,19 +22,21 @@ is out "- true
 try 'Wrap "false"' \
     'with color: "Wrap false" expected sequence of output'
 is errlvl 1
-is out reg "^- false
-- false                                        W
-- false                               \[FAILED\] W
+is out reg "^ - false
+ - false                                        W
+ - false                               \[FAILED\] W
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-\| false
-output \(1\):" NOCOLOR NOPOS TRIM
+ pwd: [^$NL]+
+ code:
+  \| false
+ output \(1\):" NOCOLOR NOPOS RTRIM
+
 
 try 'Wrap -q "true"' \
     'Bare "Wrap true" with quiet mode'
 noerror
 is out ""
+
 
 try 'Wrap -q "false"' \
     'Bare "Wrap false" with quiet mode'
@@ -54,64 +52,64 @@ Error in wrapped command:
 try 'Wrap -d "My command"  "true"' \
     'Bare "Wrap true" with description'
 noerror
-is out "- My command
-- My command                                   W
-- My command                          [  OK  ] W" NOPOS NOCOLOR TRIM
+is out " - My command
+ - My command                                   W
+ - My command                          [  OK  ] W" NOPOS NOCOLOR RTRIM
 
 try 'Wrap -d "My command" "false"' \
     'Bare wrap with description mode'
 is errlvl 1
-is out reg "- My command
-- My command                                   W
-- My command                          \[FAILED\] W
+is out reg " - My command
+ - My command                                   W
+ - My command                          \[FAILED\] W
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-\| false
-output \(1\):" NOCOLOR NOPOS TRIM
+ pwd: [^$NL]+
+ code:
+  \| false
+ output \(1\):" NOCOLOR NOPOS RTRIM
 
 try 'Wrap -q -d "My successful command" "true"' \
     'Description "Wrap true" with quiet mode'
 noerror
-is out "" TRIM
+is out "" RTRIM
 
 try 'Wrap -q -d "My failing command" "false"' \
     'Description "Wrap false" with quiet mode'
 is out reg "\
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-| false
-output (1):" NOCOLOR TRIM
+ pwd: [^$NL]+
+ code:
+  \| false
+ output \(1\):" NOCOLOR RTRIM
 
 
 try 'Wrap -qd "My failing command" "false"' \
     'support of aggregated single chars options'
 is out reg "\
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-| false
-output (1):" NOCOLOR TRIM
+ pwd: [^$NL]+
+ code:
+  \| false
+ output \(1\):" NOCOLOR RTRIM
 
 
 try 'Wrap -qd="My failing command" "false"' \
     'support of "=" usage for specifying option values'
 is out reg "\
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-| false
-output (1):" NOCOLOR TRIM
+ pwd: [^$NL]+
+ code:
+  \| false
+ output \(1\):" NOCOLOR RTRIM
 
 try 'Wrap -qd="My failing command" -- "false -d -q "' \
     'support of -- for not interpreting remainder of command line'
 is out reg "\
 Error in wrapped command:
-pwd: [^$NL]+
-code:
-| false -d -q
-output (1):" NOCOLOR TRIM
+ pwd: [^$NL]+
+ code:
+  \| false -d -q
+ output \(1\):" NOCOLOR RTRIM
 
 
 ##
@@ -128,13 +126,13 @@ EOF' \
     'stdin Wrap with description and quiet mode'
 is out reg "\
 Error in wrapped command:
-pwd: [^$NL]*
-code:
-|
-| false &&
-| false &&
-| false
-output (1):" NOCOLOR TRIM
+ pwd: [^$NL]*
+ code:
+  \|
+  \| false &&
+  \| false &&
+  \| false
+ output \(1\):" NOCOLOR RTRIM
 
 try 'Wrap -q -d "My successful command" <<EOF
 
@@ -144,7 +142,7 @@ true
 
 EOF' \
     'Description Wrap succeeding with quiet mode'
-is out "" NOCOLOR TRIM
+is out "" NOCOLOR RTRIM
 
 
 ##
@@ -169,26 +167,21 @@ EOF' \
     'Elt in Wrap should not collide'
 is errlvl 1
 is err ""
-is out "\
-- Inbed Elt
-- Inbed Elt                                    W
-- Inbed Elt                           [FAILED] W
-Error in wrapped command:
-pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
-code:
-|
-| . /etc/shlib
-|
-| source ../src/lib/libpretty.sh
-| pretty:init
-|
-| ansi_color yes
-| print_info_char \"*\"
-| Elt Hello; Feed
-| false
-output (1):
-|  -                                          *
-|  - Hello                                    *" NOCOLOR NOPOS TRIM
+is out part "\
+ code:
+  |
+  | . /etc/shlib
+  |
+  | source ../src/lib/libpretty.sh
+  | pretty:init
+  |
+  | ansi_color yes
+  | print_info_char \"*\"
+  | Elt Hello; Feed
+  | false
+ output (1):
+  |  -                                          *
+  |  - Hello                                    *" NOCOLOR NOPOS RTRIM
 
 
 
@@ -215,10 +208,7 @@ EOF' \
     'Wrap in wrap gets smaller line'
 is errlvl 1
 is err ""
-is out "\
- - Inbed Elt                           [FAILED] W
-Error in wrapped command:
- pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+is out part "\
  code:
   |
   | . /etc/shlib
@@ -277,14 +267,14 @@ EOF' \
     'failing Wrap -v not in VERBOSE mode'
 is errlvl 63
 is out reg "\
- - Simple                              [FAILED] W
+ - Simple                              \[FAILED\] W
 Error in wrapped command:
  pwd: [^$NL]*
  code:
-  | echo hello
-  | exit 63
- output (63):
-  | hello" RTRIM
+  \| echo hello
+  \| exit 63
+ output \(63\):
+  \| hello" RTRIM
 
 try '
 export VERBOSE=true
@@ -297,15 +287,15 @@ EOF' \
 is errlvl 63
 is err ''
 # 345678901234567890123456789012345678901234567890
-is out "\
+is out reg "\
  - Simple         output follows                W
-  | hello
-  .. Simple       errorlevel 63        [FAILED]
+  \| hello
+  .. Simple       errorlevel 63        \[FAILED\]
 Error in wrapped command:
- pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+ pwd: [^$NL]+
  code:
-  | echo hello
-  | exit 63" RTRIM
+  \| echo hello
+  \| exit 63" RTRIM
 
 
 ##
@@ -461,7 +451,7 @@ is out reg ' - sleeping com..
 \^C   - sleeping com.. Caught SIGINT                 W
  - sleeping com.. Caught SIGINT        \[FAILED\] W
 Error in wrapped command:
- pwd: [^$NL]*
+ pwd: [^'"$NL"']*
  code:
   \| echo "Starting.."
   \| sleep 5
@@ -513,7 +503,7 @@ is errlvl 0
 #  - interweaved ..                               W
 #  - interweaved ..                      [FAILED] W
 # Error in wrapped command:
-#  pwd: /home/vaab/dev/sh/kal-shlib-pretty/test
+#  pwd: 
 #  code:
 # '"$(echo "$CODE" | sed -r 's/^/  | /g' | head -n -1)"'
 #  output (1):

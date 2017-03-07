@@ -12,21 +12,18 @@ pretty:init
 export COLUMNS=50
 export SIZE_LINE=
 
-##
-## Elt
-##
 
 export ansi_color=yes
 try 'Elt "abcdefg" && Feed' \
     'quick check'
 noerror
-is out "- abcdefg" NOCOLOR NOPOS TRIM
+is out " - abcdefg" NOCOLOR NOPOS RTRIM
 
 export ansi_color=no
 try 'Elt "abcdefg" ; Feed' \
     'without color'
 noerror
-is out "- abcdefg" NOPOS TRIM
+is out " - abcdefg" NOPOS RTRIM
 
 try '
 export SIZE_LINE=    ## to avoid sunit vars to conflict with pretty
@@ -39,7 +36,7 @@ Feedback' \
 noerror
 is out " - abcdefghijkl.. 12345678901234567890 [  OK  ] X
 "
-is out "$COLUMNS" SIZE TRIM
+is out "$COLUMNS" SIZE RTRIM
 
 try '
 ansi_color no
