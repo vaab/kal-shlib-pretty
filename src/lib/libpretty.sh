@@ -461,6 +461,10 @@ function Wrap() {
                 __wrap_line_sed_prefixed="s/((^.)?[^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
                 ;;
             "-s") subshell=true;;
+            "--")
+                while cmdline+=("$(next-0)"); do :; done
+                break
+                ;;
             *) cmdline+=("$arg");;
         esac
     done < <(cla.normalize "$@")

@@ -522,6 +522,26 @@ is out ' - my cmd
   .. my cmd                            [  OK  ]' NOPOS NOCOLOR RTRIM
 is errlvl 0
 
+##
+## Wrap should not read others options
+##
+
+setup() {
+    :
+}
+
+
+try '
+ansi_color no
+Wrap -d "my cmd" -- false -w x
+' 'should not read others options'
+is err ''
+is out part '
+ code:
+  | false -w x
+ output (1):' NOPOS NOCOLOR RTRIM
+is errlvl 1
+
 
 ##
 ## Wrapped stderr and stdin should not mix
