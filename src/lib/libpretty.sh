@@ -515,8 +515,8 @@ function Wrap() {
             ## ``stdbuf`` does not seem to really improve the situation
             ## and is not compatible with subshelling mode.
             # stdbuf -oL -eL \
-            "${cmdline[@]}" 2> >(while IFS='' read line; do echo "E$line" >&2; done) |
-                while IFS='' read line; do echo "O$line"; done
+            "${cmdline[@]}" 2> >(while read-0a line || [ "$line" ]; do echo "E$line" >&2; done) |
+                while read-0a line || [ "$line" ] ; do echo "O$line"; done
 
             ## Pass the real return code of our code to the upper level !
         } |& sed -url1 "

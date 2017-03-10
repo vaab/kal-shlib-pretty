@@ -544,6 +544,34 @@ is errlvl 1
 
 
 ##
+## Wrap will output any char (only NUL is not displayed)
+##
+
+setup() {
+    :
+}
+
+
+ascii_table() { echo -en "$(echo '\'0{0..3}{0..7}{0..7} | tr -d " ")"; }
+export -f ascii_table
+
+try '
+ansi_color no
+Wrap -sd "my cmd" <<EOF
+ascii_table
+false
+EOF
+' 'is all chars correctly reported'
+is err ''
+is out part "
+ output (1):
+$(ascii_table | sed -r 's/^/  | /g')
+"
+is errlvl 1
+
+
+
+##
 ## Wrapped stderr and stdin should not mix
 ##
 
