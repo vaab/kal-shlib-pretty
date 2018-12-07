@@ -605,9 +605,15 @@ pretty:init() {
     export SEP_LIST_ELT SEP_ELT_INFO SEP_INFO_STATUS SEP_STATUS_CHAR SEP_LIST_ELT_SIZE SEP_ELT_INFO_SIZE \
            SEP_INFO_STATUS_SIZE SEP_STATUS_CHAR_SIZE
 
-
     if [ -z "$SIZE_LINE" ]; then
-        SIZE_LINE=$COLUMNS                            ## full line size
+        if [ "$COLUMNS" -a "$COLUMNS" -gt 0 ]; then
+            SIZE_LINE=$COLUMNS                    ## full line size
+	    else
+            SIZE_LINE=80
+	    fi
+    fi
+    if [ "$SIZE_LINE" -lt 40 ]; then
+        SIZE_LINE=40
     fi
     SIZE_INFO=20                                  ## zone info size in chars
     SIZE_STATUS=8                                 ## status info size in chars
