@@ -5,7 +5,7 @@
 
 pkg_name="kal-shlib-pretty"
 pkg_version="%%version%%"
-pkg_maturity="beta"
+pkg_maturity="alpha"
 
 . pkg/author
 
