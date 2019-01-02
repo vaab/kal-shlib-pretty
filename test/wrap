@@ -570,6 +570,97 @@ $(ascii_table | sed -r 's/^/  | /g')
 is errlvl 1
 
 
+##
+## Wrap command echo mode
+##
+
+try '
+ansi_color no
+Wrap -X -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -X with no error should not display anything'
+noerror
+is out "\
+ - Simple                              [  OK  ] W" RTRIM
+
+try '
+ansi_color no
+Wrap -X -d "Simple" <<EOF
+echo "hello"
+false
+EOF' \
+    'Wrap -X with error should catch debug lines'
+is errlvl 1
+is err ""
+## can only check one line because of stderr/stdin mix
+is out part "\
+  | + echo hello\
+" RTRIM
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -X -v should catch debug lines'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  | + echo hello\
+" RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" <<EOF
+echo "YYY\$(echo "XXX")"
+true
+EOF' \
+    'Wrap -X -v should keep nested command as nested'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  | ++ echo XXX\
+" RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" -- echo "YYY\$(echo "XXX")"' \
+    'Wrap -X -v should keep nested command as nested in line mode'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  | ++ echo XXX\
+" RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -x -v -d "Simple" <<EOF
+echo "YYY"
+set -eux
+echo "XXX"
+true
+EOF' \
+    'Wrap -x -v should not force +x'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+ - Simple         output follows                W
+  | YYY\
+" RTRIM
+is out part "\
+  | + echo XXX\
+" RTRIM
+
 
 ##
 ## Wrapped stderr and stdin should not mix
