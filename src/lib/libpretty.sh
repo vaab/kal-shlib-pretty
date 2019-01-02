@@ -442,6 +442,7 @@ function Wrap() {
     WRAP_PREFIX_STDOUT=${WRAP_PREFIX_STDOUT:-"  ${GRAY}|${NORMAL} "}
     WRAP_PREFIX_STDERR=${WRAP_PREFIX_STDERR:-"  ${RED}!${NORMAL} "}
     WRAP_PREFIX_CODE=${WRAP_PREFIX_CODE:-"  ${GRAY}|${NORMAL} "}
+    WRAP_PREFIX_ECHO_CMD=${WRAP_PREFIX_ECHO_CMD:-"  "}
     WRAP_PREFIX_STDOUT_CONTINUATION="   ${GRAY}.${NORMAL}"
     WRAP_PREFIX_STDERR_CONTINUATION="   ${DARKRED}.${NORMAL}"
     WRAP_LINE_WRAP_CHAR="${DARKYELLOW}\\\\${NORMAL}"
@@ -450,6 +451,7 @@ function Wrap() {
     cmdline=()
     subshell=
     cmdtype=array
+    __wrap_command_prefix=()
     while read-0 arg; do
         case "$arg" in
             "-q") __wrap_quiet=;;
@@ -461,6 +463,16 @@ function Wrap() {
                 __wrap_line_sed_prefixed="s/((^.)?[^\n]{$((WRAP_LINE_WRAP_SIZE))})/\1${WRAP_LINE_WRAP_CHAR}\n${WRAP_PREFIX_STDOUT_CONTINUATION}/g"
                 ;;
             "-s") subshell=true;;
+            "-x")
+                echo_command=true
+                __wrap_line_sed_prefixed="s/^E(\++)"$'\037'"(.*)$/${WRAP_PREFIX_ECHO_CMD}${DARKWHITE}\1 ${DARKWHITE}\2${NORMAL}/g"
+                __wrap_command_prefix+=("export PS4="$'+\037')
+                ;;
+            "-X")
+                echo_command=true
+                __wrap_line_sed_prefixed="s/^E(\++)"$'\037'"(.*)$/${WRAP_PREFIX_ECHO_CMD}${DARKWHITE}\1 ${DARKWHITE}\2${NORMAL}/g"
+                __wrap_command_prefix+=("export PS4="$'+\037' "set -x")
+                ;;
             "--")
                 while cmdline+=("$(next-0)"); do :; done
                 break
@@ -470,22 +482,25 @@ function Wrap() {
     done < <(cla.normalize "$@")
 
 
+    __wrap_code_raw=""
     if [ "${#cmdline[@]}" == 0 ]; then
         cmdtype=string
         __wrap_code=$("$cat" -)
         [ "$__wrap_quiet" == false -a -z "$__wrap_desc" ] &&
         print_error "no description for warp command"
+        __wrap_code_raw="$(printf "%s\n" "${__wrap_command_prefix[@]}")"$'\n'"$__wrap_code"
         if [ -z "$subshell" ]; then
-            cmdline=("bash" "-c" "$__wrap_code")
+            cmdline=("bash" "-c" "$__wrap_code_raw")
         else
             cmdline=(eval "$__wrap_code")
         fi
     else
         __wrap_code="${cmdline[*]}"
         test -z "$__wrap_desc" && __wrap_desc="$*"
+        __wrap_code_raw="$(printf "%s\n" "${__wrap_command_prefix[@]}")"$'\n'"$__wrap_code"
         if [ -z "$subshell" ]; then
             cmdtype=string
-            cmdline=("bash" "-c" "${cmdline[*]}")
+            cmdline=("bash" "-c" "$__wrap_code_raw")
         fi
     fi
 
@@ -515,12 +530,13 @@ function Wrap() {
             ## ``stdbuf`` does not seem to really improve the situation
             ## and is not compatible with subshelling mode.
             # stdbuf -oL -eL \
-            "${cmdline[@]}" 2> >(while read-0a line || [ "$line" ]; do echo "E$line" >&2; done) |
-                while read-0a line || [ "$line" ] ; do echo "O$line"; done
+            "${cmdline[@]}" 2> >(while read-0a line || [ "$line" ]; do echo "E$line" >&2; done) \
+                1> >(while read-0a line || [ "$line" ] ; do echo "O$line"; done)
 
             ## Pass the real return code of our code to the upper level !
         } |& sed -url1 "
                   $__wrap_line_sed_prefixed
+                  $__prefix_line_echo_command
                   s/^O/${WRAP_PREFIX_STDOUT}/g
                   s/^E/${WRAP_PREFIX_STDERR}/g
                   " | $__wrap_log_method

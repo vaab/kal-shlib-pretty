@@ -393,7 +393,7 @@ EOF' \
     'using subshell to keep env'
 is err ''
 is errlvl 77
-is out part "
+is out part "\
  code:
   |
   | echo \"usage of double quote\"
@@ -412,7 +412,8 @@ is out part "
 
 
 setup() {
-    cd "$test_tmpdir"; mkdir test1;
+    cd "$test_tmpdir"
+    mkdir -p test1
     cd test1
     cat <<EOF > foo
 #!/bin/bash
@@ -443,7 +444,7 @@ pid=$(pid.get_child_pids $!)
 sleep 0.2
 echo -n ^C  ## simulating display of ^C done by the tty
 kill -s SIGINT -$pid
-wait $subshell_pid
+wait
 ' 'ctrl-c handling'
 is err ''
 is out reg ' - sleeping com..
@@ -570,6 +571,97 @@ $(ascii_table | sed -r 's/^/  | /g')
 is errlvl 1
 
 
+##
+## Wrap command echo mode
+##
+
+try '
+ansi_color no
+Wrap -X -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -X with no error should not display anything'
+noerror
+is out "\
+ - Simple                              [  OK  ] W" RTRIM
+
+try '
+ansi_color no
+Wrap -X -d "Simple" <<EOF
+echo "hello"
+false
+EOF' \
+    'Wrap -X with error should catch debug lines'
+is errlvl 1
+is err ""
+## can only check one line because of stderr/stdin mix
+is out part "\
+  + echo hello\
+" NOCOLOR RTRIM
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" <<EOF
+echo "hello"
+true
+EOF' \
+    'Wrap -X -v should catch debug lines'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  + echo hello\
+" NOCOLOR RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" <<EOF
+echo "YYY\$(echo "XXX")"
+true
+EOF' \
+    'Wrap -X -v should keep nested command as nested'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  ++ echo XXX\
+" NOCOLOR RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -X -v -d "Simple" -- echo "YYY\$(echo "XXX")"' \
+    'Wrap -X -v should keep nested command as nested in line mode'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+  ++ echo XXX\
+" NOCOLOR RTRIM
+
+
+try '
+VERBOSE=1
+ansi_color no
+Wrap -x -v -d "Simple" <<EOF
+echo "YYY"
+set -eux
+echo "XXX"
+true
+EOF' \
+    'Wrap -x -v should not force +x'
+noerror
+## can only check one line because of stderr/stdin mix
+is out part "\
+ - Simple         output follows                W
+  | YYY\
+" RTRIM
+is out part "\
+  + echo XXX\
+" NOCOLOR RTRIM
+
 
 ##
 ## Wrapped stderr and stdin should not mix
@@ -612,7 +704,7 @@ is errlvl 1
 #  - interweaved ..                               W
 #  - interweaved ..                      [FAILED] W
 # Error in wrapped command:
-#  pwd: 
+#  pwd: '"$PWD"'
 #  code:
 # '"$(echo "$CODE" | sed -r 's/^/  | /g' | head -n -1)"'
 #  output (1):
