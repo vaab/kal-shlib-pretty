@@ -22,6 +22,7 @@
 include color
 include common
 include cla
+include parse
 
 
 ## Code
